@@ -33,10 +33,9 @@ Las propuestas fueron diseñados con Stitch y se encuentran en `/propuesta/scree
 - Al autenticarse el servidor devuelve un JWT guardado en `localStorage`
 
 ### Pantalla 2 — Dashboard del estudiante `(/dashboard)`
-- Encabezado con nombre del estudiante y puntaje actual resaltado
-- Selector desplegable de tema (Matemáticas, Historia, Ciencias, etc.)
+- Encabezado con nombres del estudiantes y puntaje actual resaltado
 - Botón **"Iniciar evaluación"** → redirige al Quiz
-- Tarjeta con el resultado de la última evaluación y mensaje motivacional
+- Tarjeta con el resultado de la última evaluación y mensaje
 - Botón **"Cerrar sesión"**
 
 ### Pantalla 3 — Evaluación `(/quiz)`
@@ -201,4 +200,4 @@ npm run dev                   # http://localhost:3000
  
 ---
  
-*Proyecto QuizGenius · Desarrollo Web 2025*
+*Proyecto · Desarrollo Web 2025*
