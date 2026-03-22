@@ -162,17 +162,15 @@ quiz-app/
  
 ## ⚙️ Variables de entorno
  
-Copia `.env.example` a `.env.local` y llena los valores (Next.js carga `.env.local` automáticamente):
- 
 ```env
 DB_HOST=localhost
 DB_PORT=3306
 DB_USER=root
-DB_PASSWORD=tu_password
-DB_NAME=quizgenius
+DB_PASSWORD=root
+DB_NAME=Usuarios
  
-GEMINI_API_KEY=tu_clave_de_google_gemini
-JWT_SECRET=una_clave_secreta_muy_larga
+GEMINI_API_KEY=
+JWT_SECRET=
 ```
  
 ---
@@ -187,17 +185,11 @@ JWT_SECRET=una_clave_secreta_muy_larga
  
 ---
  
-## 🚀 Instalación rápida
+## Integrantes del proyecto
+
+- Luis German Sanchez Cortez
+- Julio Cesar Atenco Aguilar
+- Diego Mendoza Mateo
+
  
-```bash
-git clone https://github.com/tu-usuario/quiz-app.git
-cd quiz-app
-npm install
-cp .env.example .env.local    # configurar variables
-mysql -u root -p < schema.sql
-npm run dev                   # http://localhost:3000
-```
- 
----
- 
-*Proyecto · Desarrollo Web 2025*
+*Proyecto · Desarrollo Web 2026*
