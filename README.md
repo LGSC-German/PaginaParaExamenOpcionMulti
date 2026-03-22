@@ -127,8 +127,8 @@ quiz-app/
 ├── package.json
 ├── next.config.js
 ├── propuesta/
-│   ├── README.md                     ← Pantallas y modelo de BD explicados
 │   └── screens/                      ← Imágenes exportadas de Stitch
+├── README.md                     ← Pantallas y modelo de BD explicados
 ├── app/
 │   ├── layout.jsx                    ← Layout raíz
 │   ├── page.jsx                      ← Login / Registro (/)
