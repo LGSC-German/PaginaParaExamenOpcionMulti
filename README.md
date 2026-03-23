@@ -145,7 +145,9 @@ quiz-app/
 │       │   └── [id]/
 │       │       ├── route.ts          ← GET · PUT · DELETE /api/users/:id
 │       │       └── score/route.ts    ← PUT /api/users/:id/score
-│       └── topics/
+│       ├── quiz/
+│       │   └── route.ts 
+|       └── topics/
 │           ├── route.ts              ← GET · POST /api/topics
 │           └── [id]/route.ts         ← DELETE /api/topics/:id
 ├── lib/
