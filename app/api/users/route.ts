@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { validarToken } from "@/lib/auth";
 import pool from "@/lib/db";
 
-/*export async function GET(req: NextRequest) {
+export async function GET(req: NextRequest) {
   try {
     const token = req.headers.get("authorization")?.replace("Bearer ", "");
     validarToken(token);
@@ -20,7 +20,7 @@ import pool from "@/lib/db";
     }
     return NextResponse.json({ error: "Error al obtener usuarios" }, { status: 500 });
   }
-}*/
+}/*
 export async function GET(req: NextRequest) {
   try {
     const token = req.headers.get("authorization")?.replace("Bearer ", "");
@@ -31,4 +31,4 @@ export async function GET(req: NextRequest) {
     console.log("ERROR VALIDACION:", err.message);
     // ...
   }
-}
+}*/
