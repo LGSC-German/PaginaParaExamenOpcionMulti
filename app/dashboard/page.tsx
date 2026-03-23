@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 
-// ── Types ──────────────────────────────────────────────────────────────────────
+// Estructura de un estudiante en el leaderboard
 interface Student {
   rank: number;
   name: string;
@@ -12,7 +12,8 @@ interface Student {
   isCurrentUser?: boolean;
 }
 
-// ── Mock data (reemplazar con fetch a /api/users) ─────────────────────────────
+// 🔌 BD: reemplazar con fetch a GET /api/users/scores?order=desc
+//        La API consulta la tabla `scores` de MariaDB y devuelve este mismo formato
 const ALL_STUDENTS: Student[] = [
   { rank: 1,  name: "Sarah Jenkins",  score: 99.2, time: "14m 22s" },
   { rank: 2,  name: "Marcus Thorne",  score: 98.5, time: "16m 45s" },
@@ -31,32 +32,42 @@ const ALL_STUDENTS: Student[] = [
   { rank: 15, name: "Noah Williams",  score: 82.0, time: "21m 00s" },
 ];
 
+// Cantidad de filas visibles por página en el leaderboard
 const PAGE_SIZE = 5;
 
+// Colores especiales para el top 3
 const RANK_STYLE: Record<number, { bg: string; color: string }> = {
   1: { bg: "#fef9c3", color: "#854d0e" },
   2: { bg: "#f1f5f9", color: "#475569" },
   3: { bg: "#fff7ed", color: "#9a3412" },
 };
 
+// Ítems del sidebar y nav móvil
 const NAV_ITEMS = [
-  { icon: "quiz",      label: "Examen",        href: "/quiz",      active: false },
+  { icon: "quiz",        label: "Examen",  href: "/quiz",      active: false },
   { icon: "leaderboard", label: "Ranking", href: "/dashboard", active: true  },
 ];
 
-// ── Component ──────────────────────────────────────────────────────────────────
 export default function DashboardPage() {
-  const [tab, setTab]         = useState<"global" | "group">("global");
-  const [page, setPage]       = useState(1);
-  const [mounted, setMounted] = useState(false);
+  // Controla qué tab del leaderboard está activa: global o grupo
+  // 🔌 BD: al cambiar el tab, hacer fetch a GET /api/users/scores?filter=group o ?filter=global
+  const [tab, setTab] = useState<"global" | "group">("global");
 
+  // Página actual de la tabla de clasificación
+  const [page, setPage] = useState(1);
+
+  // Evita errores de hidratación SSR/cliente
+  const [mounted, setMounted] = useState(false);
   useEffect(() => { setMounted(true); }, []);
 
   if (!mounted) return null;
 
-  const totalPages = Math.ceil(ALL_STUDENTS.length / PAGE_SIZE);
+  // Calcula el total de páginas y el slice de estudiantes visible
+  const totalPages  = Math.ceil(ALL_STUDENTS.length / PAGE_SIZE);
   const pageStudents = ALL_STUDENTS.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
+  // Encuentra al usuario autenticado dentro de la lista
+  // 🔌 BD: isCurrentUser debe venir marcado desde la API comparando con el userId del JWT
   const currentUser = ALL_STUDENTS.find((s) => s.isCurrentUser)!;
 
   return (
@@ -71,7 +82,7 @@ export default function DashboardPage() {
         }
       `}</style>
 
-      {/* ── TopAppBar ── */}
+      {/* Barra superior con nombre de la app */}
       <header className="fixed top-0 w-full z-50 flex items-center justify-between px-6 h-16"
         style={{ backgroundColor: "rgba(255,255,255,0.85)", backdropFilter: "blur(12px)", borderBottom: "1px solid #e0e3e5" }}>
         <div className="flex items-center gap-4">
@@ -87,11 +98,9 @@ export default function DashboardPage() {
         </div>
       </header>
 
-      {/* ── Sidebar ── */}
+      {/* Sidebar de navegación — solo visible en desktop */}
       <aside className="hidden md:flex flex-col fixed left-0 top-0 h-screen pt-20 border-r"
         style={{ width: "16rem", backgroundColor: "#f2f4f6", borderColor: "#e0e3e5" }}>
-        
-
         <nav className="flex-1 space-y-1 px-3">
           {NAV_ITEMS.map((item) => (
             <Link key={item.label} href={item.href}
@@ -113,16 +122,16 @@ export default function DashboardPage() {
         </nav>
       </aside>
 
-      {/* ── Main ── */}
       <main className="md:ml-64 pt-24 pb-24 px-6 lg:px-12">
         <div className="max-w-5xl mx-auto space-y-8">
 
-          {/* Hero bento */}
+          {/* ── Sección Hero ── */}
           <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Achievement card */}
+
+            {/* Tarjeta de felicitación
+                🔌 BD: reemplazar "Alex" con el nombre del usuario autenticado → GET /api/users/me */}
             <div className="lg:col-span-2 relative overflow-hidden rounded-xl p-8 flex flex-col justify-between min-h-60"
               style={{ backgroundColor: "#0056d2" }}>
-              {/* Blob */}
               <div className="absolute top-0 right-0 w-64 h-64 rounded-full -mr-20 -mt-20 blur-3xl pointer-events-none"
                 style={{ backgroundColor: "rgba(0,64,161,0.4)" }} />
               <div className="relative z-10">
@@ -136,10 +145,13 @@ export default function DashboardPage() {
                 </h1>
               </div>
               <div className="relative z-10 flex gap-4 mt-8 flex-wrap">
+                {/* Botón para ver respuestas del examen
+                    🔌 BD: redirigir a /quiz/review?id={examId} para cargar respuestas desde `scores` */}
                 <button className="px-6 py-3 rounded-md font-semibold text-sm transition-opacity hover:opacity-90"
                   style={{ backgroundColor: "#ffffff", color: "#0040a1", fontFamily: "'Manrope',sans-serif" }}>
                   Revisar Respuestas
                 </button>
+                {/* Botón para repetir el examen — reinicia el quiz */}
                 <button className="px-6 py-3 rounded-md font-semibold text-sm transition-colors border"
                   style={{ color: "#dae2ff", borderColor: "rgba(218,226,255,0.3)", fontFamily: "'Manrope',sans-serif" }}
                   onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "rgba(218,226,255,0.1)")}
@@ -149,44 +161,39 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* Stats card */}
+            {/* Tarjeta de estadísticas del usuario actual
+                🔌 BD: currentUser.score y currentUser.rank vienen de GET /api/users/scores */}
             <div className="rounded-xl p-8 flex flex-col justify-center items-center text-center space-y-6"
               style={{ backgroundColor: "#ffffff", boxShadow: "0 20px 40px rgba(25,28,30,0.06)" }}>
               <div>
-                <p className="text-xs font-medium uppercase tracking-widest mb-1" style={{ color: "#424654" }}>
-                  Tu Puntaje
-                </p>
+                <p className="text-xs font-medium uppercase tracking-widest mb-1" style={{ color: "#424654" }}>Tu Puntaje</p>
                 <div className="text-6xl font-black" style={{ fontFamily: "'Manrope',sans-serif", color: "#0040a1" }}>
                   {currentUser.score}<span className="text-3xl">%</span>
                 </div>
               </div>
               <div className="w-full h-px" style={{ backgroundColor: "#eceef0" }} />
               <div>
-                <p className="text-xs font-medium uppercase tracking-widest mb-1" style={{ color: "#424654" }}>
-                  Ranking Actual
-                </p>
+                <p className="text-xs font-medium uppercase tracking-widest mb-1" style={{ color: "#424654" }}>Ranking Actual</p>
                 <div className="text-3xl font-bold" style={{ fontFamily: "'Manrope',sans-serif", color: "#191c1e" }}>
                   {currentUser.rank}°{" "}
-                  <span className="text-lg font-normal" style={{ color: "#424654" }}>
-                    de {ALL_STUDENTS.length}
-                  </span>
+                  <span className="text-lg font-normal" style={{ color: "#424654" }}>de {ALL_STUDENTS.length}</span>
                 </div>
               </div>
             </div>
           </section>
 
-          {/* Leaderboard */}
+          {/* ── Leaderboard ── */}
           <section className="space-y-6">
             <div className="flex items-end justify-between flex-wrap gap-4">
               <div>
                 <h3 className="text-2xl font-bold" style={{ fontFamily: "'Manrope',sans-serif", color: "#191c1e" }}>
                   Tabla de Clasificación
                 </h3>
-                <p className="text-sm" style={{ color: "#424654" }}>
-                  Rankings en tiempo real
-                </p>
+                <p className="text-sm" style={{ color: "#424654" }}>Rankings en tiempo real</p>
               </div>
-              {/* Tab toggle */}
+
+              {/* Toggle Global / Mi Grupo
+                  🔌 BD: al cambiar tab, hacer fetch con ?filter=global o ?filter=group */}
               <div className="flex p-1 rounded-lg" style={{ backgroundColor: "#e6e8ea" }}>
                 {(["global", "group"] as const).map((t) => (
                   <button key={t} onClick={() => setTab(t)}
@@ -203,9 +210,10 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* Table */}
+            {/* Tabla del leaderboard */}
             <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "#ffffff", boxShadow: "0 10px 30px rgba(25,28,30,0.04)" }}>
-              {/* Header */}
+
+              {/* Encabezado de columnas */}
               <div className="grid grid-cols-12 gap-4 px-8 py-4 text-xs font-bold uppercase tracking-widest"
                 style={{ backgroundColor: "#f2f4f6", color: "#424654" }}>
                 <div className="col-span-1">Rango</div>
@@ -214,26 +222,23 @@ export default function DashboardPage() {
                 <div className="col-span-3 text-right">Tiempo</div>
               </div>
 
-              {/* Rows */}
+              {/* Filas de estudiantes — slice de la página actual
+                  🔌 BD: pageStudents viene de ALL_STUDENTS paginado; reemplazar con datos reales */}
               <div style={{ borderTop: "1px solid #f2f4f6" }}>
                 {pageStudents.map((student) => {
                   const rankStyle = RANK_STYLE[student.rank];
-                  const isUser = student.isCurrentUser;
+                  const isUser    = student.isCurrentUser;
                   return (
                     <div key={student.rank}
                       className="grid grid-cols-12 gap-4 px-8 py-5 items-center transition-colors relative"
-                      style={{
-                        backgroundColor: isUser ? "rgba(0,64,161,0.04)" : undefined,
-                        borderTop: "1px solid #f2f4f6",
-                      }}
+                      style={{ backgroundColor: isUser ? "rgba(0,64,161,0.04)" : undefined, borderTop: "1px solid #f2f4f6" }}
                       onMouseEnter={(e) => { if (!isUser) e.currentTarget.style.backgroundColor = "#f7f9fb"; }}
                       onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = isUser ? "rgba(0,64,161,0.04)" : ""; }}>
-                      {/* Left accent for current user */}
-                      {isUser && (
-                        <div className="absolute left-0 top-0 bottom-0 w-1" style={{ backgroundColor: "#0040a1" }} />
-                      )}
 
-                      {/* Rank */}
+                      {/* Acento lateral para el usuario actual */}
+                      {isUser && <div className="absolute left-0 top-0 bottom-0 w-1" style={{ backgroundColor: "#0040a1" }} />}
+
+                      {/* Columna: Rango con color especial para top 3 */}
                       <div className="col-span-1">
                         {rankStyle ? (
                           <span className="w-8 h-8 flex items-center justify-center rounded-full text-sm font-bold"
@@ -248,26 +253,21 @@ export default function DashboardPage() {
                         )}
                       </div>
 
-                      {/* Name */}
+                      {/* Columna: Nombre e ícono de usuario */}
                       <div className="col-span-6 flex items-center gap-4">
                         <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
                           style={{ backgroundColor: isUser ? "#0040a1" : "#e6e8ea" }}>
-                          <span className="material-symbols-outlined text-sm"
-                            style={{ color: isUser ? "#ffffff" : "#424654" }}>
-                            person
-                          </span>
+                          <span className="material-symbols-outlined text-sm" style={{ color: isUser ? "#ffffff" : "#424654" }}>person</span>
                         </div>
                         <div className="flex flex-col">
                           <span className="font-bold text-sm" style={{ fontFamily: "'Manrope',sans-serif", color: "#191c1e" }}>
                             {student.name}
                           </span>
-                          {isUser && (
-                            <span className="text-[10px] font-bold uppercase" style={{ color: "#0040a1" }}>Tú</span>
-                          )}
+                          {isUser && <span className="text-[10px] font-bold uppercase" style={{ color: "#0040a1" }}>Tú</span>}
                         </div>
                       </div>
 
-                      {/* Score */}
+                      {/* Columna: Puntaje — badge especial para el #1 */}
                       <div className="col-span-2 text-center">
                         {student.rank === 1 ? (
                           <span className="px-3 py-1 rounded-full text-sm font-bold"
@@ -281,7 +281,7 @@ export default function DashboardPage() {
                         )}
                       </div>
 
-                      {/* Time */}
+                      {/* Columna: Tiempo invertido en el examen */}
                       <div className="col-span-3 text-right text-sm font-medium" style={{ color: "#424654" }}>
                         {student.time}
                       </div>
@@ -290,9 +290,8 @@ export default function DashboardPage() {
                 })}
               </div>
 
-              {/* Pagination */}
-              <div className="px-8 py-4 flex justify-center items-center gap-2"
-                style={{ borderTop: "1px solid #f2f4f6" }}>
+              {/* Paginación — navega entre páginas del leaderboard */}
+              <div className="px-8 py-4 flex justify-center items-center gap-2" style={{ borderTop: "1px solid #f2f4f6" }}>
                 <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}
                   className="w-8 h-8 rounded-full flex items-center justify-center transition-colors disabled:opacity-30"
                   style={{ color: "#424654" }}
@@ -303,10 +302,7 @@ export default function DashboardPage() {
                 {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
                   <button key={p} onClick={() => setPage(p)}
                     className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-colors"
-                    style={{
-                      backgroundColor: page === p ? "#0040a1" : "transparent",
-                      color: page === p ? "#ffffff" : "#424654",
-                    }}>
+                    style={{ backgroundColor: page === p ? "#0040a1" : "transparent", color: page === p ? "#ffffff" : "#424654" }}>
                     {p}
                   </button>
                 ))}
@@ -323,7 +319,7 @@ export default function DashboardPage() {
         </div>
       </main>
 
-      {/* ── Bottom nav (mobile) ── */}
+      {/* Nav inferior en móvil */}
       <nav className="md:hidden fixed bottom-0 w-full flex items-center justify-around h-16 z-50"
         style={{ backgroundColor: "rgba(255,255,255,0.9)", backdropFilter: "blur(12px)", borderTop: "1px solid #e0e3e5" }}>
         {NAV_ITEMS.map((item) => (
@@ -334,9 +330,7 @@ export default function DashboardPage() {
               style={{ fontVariationSettings: item.active ? "'FILL' 1" : "'FILL' 0" }}>
               {item.icon}
             </span>
-            <span className="text-[10px] font-medium" style={{ fontFamily: "'Manrope',sans-serif" }}>
-              {item.label}
-            </span>
+            <span className="text-[10px] font-medium" style={{ fontFamily: "'Manrope',sans-serif" }}>{item.label}</span>
           </Link>
         ))}
       </nav>
