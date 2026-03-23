@@ -5,27 +5,15 @@ import pool from "@/lib/db";
 
 const router = Router();
 
-// GET /usuarios
-router.get("/api/users", async (req: Request, res: Response) => {
+// GET /api/auth/login → autenticación de usuario
+router.post("/api/auth/login", async (req: Request, res: Response) => {
   try {
-    const conn = await pool.getConnection();
-    const rows = await conn.query("SELECT id, nombre, email FROM usuarios");
-    conn.release();
-    res.json(rows);
-  } catch {
-    res.status(500).json({ error: "Error al obtener usuarios" });
-  }
-});
-
-// POST /usuarios/login
-router.post("/api/users/login", async (req: Request, res: Response) => {
-  try {
-    const { usuario, password } = req.body;
+    const { email, password } = req.body;
 
     const conn = await pool.getConnection();
     const rows = await conn.query(
       "SELECT id, nombre, password FROM usuarios WHERE email = ?",
-      [usuario]
+      [email]
     );
     conn.release();
 
