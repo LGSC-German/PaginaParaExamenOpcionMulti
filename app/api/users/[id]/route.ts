@@ -1,63 +1,61 @@
-import { Router, Request, Response } from "express";
+import { NextRequest, NextResponse } from "next/server";
 import { validarToken } from "@/lib/auth";
 import pool from "@/lib/db";
 
-const router = Router();
+type Params = { params: { id: string } };
 
-// GET /api/users/:id → obtener usuario por ID
-router.get("/api/users/:id", async (req: Request, res: Response) => {
+export async function GET(req: NextRequest, { params }: Params) {
   try {
-    validarToken(req.headers.authorization?.split(" ")[1]);
+    const token = req.headers.get("authorization")?.replace("Bearer ", "");
+    validarToken(token);
 
-    const { id } = req.params;
     const conn = await pool.getConnection();
     const rows = await conn.query(
       "SELECT id, nombre, email, score, created_at FROM usuarios WHERE id = ?",
-      [id]
+      [params.id]
     );
     conn.release();
 
     if (rows.length === 0) {
-      return res.status(404).json({ error: "Usuario no encontrado" });
+      return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
     }
 
-    res.json(rows[0]);
+    return NextResponse.json(rows[0]);
   } catch (err: any) {
     if (err.message === "Acceso denegado" || err.message === "Token inválido o expirado") {
-      return res.status(401).json({ error: err.message });
+      return NextResponse.json({ error: err.message }, { status: 401 });
     }
-    res.status(500).json({ error: "Error al obtener el usuario" });
+    return NextResponse.json({ error: "Error al obtener el usuario" }, { status: 500 });
   }
-});
+}
 
-// PUT /api/users/:id → actualizar nombre o email
-router.put("/api/users/:id", async (req: Request, res: Response) => {
+export async function PUT(req: NextRequest, { params }: Params) {
   try {
-    validarToken(req.headers.authorization?.split(" ")[1]);
+    const token = req.headers.get("authorization")?.replace("Bearer ", "");
+    validarToken(token);
 
-    const { id } = req.params;
-    const { nombre, email } = req.body;
+    const { nombre, email } = await req.json();
 
     if (!nombre && !email) {
-      return res.status(400).json({ error: "Se requiere al menos nombre o email para actualizar" });
+      return NextResponse.json(
+        { error: "Se requiere al menos nombre o email" },
+        { status: 400 }
+      );
     }
 
     const conn = await pool.getConnection();
+    const existing = await conn.query("SELECT id FROM usuarios WHERE id = ?", [params.id]);
 
-    // Verificar que el usuario existe
-    const existing = await conn.query("SELECT id FROM usuarios WHERE id = ?", [id]);
     if (existing.length === 0) {
       conn.release();
-      return res.status(404).json({ error: "Usuario no encontrado" });
+      return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
     }
 
-    // Construir consulta dinámica
     const fields: string[] = [];
     const values: any[] = [];
-
     if (nombre) { fields.push("nombre = ?"); values.push(nombre); }
     if (email)  { fields.push("email = ?");  values.push(email); }
-    values.push(id);
+    values.push(params.id);
 
     await conn.query(
       `UPDATE usuarios SET ${fields.join(", ")}, updated_at = NOW() WHERE id = ?`,
@@ -65,39 +63,36 @@ router.put("/api/users/:id", async (req: Request, res: Response) => {
     );
     conn.release();
 
-    res.json({ message: "Usuario actualizado exitosamente" });
+    return NextResponse.json({ message: "Usuario actualizado exitosamente" });
   } catch (err: any) {
     if (err.message === "Acceso denegado" || err.message === "Token inválido o expirado") {
-      return res.status(401).json({ error: err.message });
+      return NextResponse.json({ error: err.message }, { status: 401 });
     }
-    res.status(500).json({ error: "Error al actualizar el usuario" });
+    return NextResponse.json({ error: "Error al actualizar el usuario" }, { status: 500 });
   }
-});
+}
 
-// DELETE /api/users/:id → eliminar usuario
-router.delete("/api/users/:id", async (req: Request, res: Response) => {
+export async function DELETE(req: NextRequest, { params }: Params) {
   try {
-    validarToken(req.headers.authorization?.split(" ")[1]);
+    const token = req.headers.get("authorization")?.replace("Bearer ", "");
+    validarToken(token);
 
-    const { id } = req.params;
     const conn = await pool.getConnection();
+    const existing = await conn.query("SELECT id FROM usuarios WHERE id = ?", [params.id]);
 
-    const existing = await conn.query("SELECT id FROM usuarios WHERE id = ?", [id]);
     if (existing.length === 0) {
       conn.release();
-      return res.status(404).json({ error: "Usuario no encontrado" });
+      return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
     }
 
-    await conn.query("DELETE FROM usuarios WHERE id = ?", [id]);
+    await conn.query("DELETE FROM usuarios WHERE id = ?", [params.id]);
     conn.release();
 
-    res.json({ message: "Usuario eliminado exitosamente" });
+    return NextResponse.json({ message: "Usuario eliminado exitosamente" });
   } catch (err: any) {
     if (err.message === "Acceso denegado" || err.message === "Token inválido o expirado") {
-      return res.status(401).json({ error: err.message });
+      return NextResponse.json({ error: err.message }, { status: 401 });
     }
-    res.status(500).json({ error: "Error al eliminar el usuario" });
+    return NextResponse.json({ error: "Error al eliminar el usuario" }, { status: 500 });
   }
-});
-
-export default router;
+}

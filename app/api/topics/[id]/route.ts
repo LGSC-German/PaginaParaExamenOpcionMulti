@@ -1,38 +1,30 @@
-import { Router, Request, Response } from "express";
+import { NextRequest, NextResponse } from "next/server";
 import { validarToken } from "@/lib/auth";
 import pool from "@/lib/db";
 
-const router = Router();
+type Params = { params: { id: string } };
 
-// DELETE /api/topics/:id → eliminar un tema (requiere JWT)
-router.delete("/api/topics/:id", async (req: Request, res: Response) => {
+export async function DELETE(req: NextRequest, { params }: Params) {
   try {
-    validarToken(req.headers.authorization?.split(" ")[1]);
-
-    const { id } = req.params;
+    const token = req.headers.get("authorization")?.replace("Bearer ", "");
+    validarToken(token);
 
     const conn = await pool.getConnection();
-
-    const existing = await conn.query(
-      "SELECT id, nombre FROM temas WHERE id = ?",
-      [id]
-    );
+    const existing = await conn.query("SELECT id FROM temas WHERE id = ?", [params.id]);
 
     if (existing.length === 0) {
       conn.release();
-      return res.status(404).json({ error: "Tema no encontrado" });
+      return NextResponse.json({ error: "Tema no encontrado" }, { status: 404 });
     }
 
-    await conn.query("DELETE FROM temas WHERE id = ?", [id]);
+    await conn.query("DELETE FROM temas WHERE id = ?", [params.id]);
     conn.release();
 
-    res.json({ message: "Tema eliminado exitosamente" });
+    return NextResponse.json({ message: "Tema eliminado exitosamente" });
   } catch (err: any) {
     if (err.message === "Acceso denegado" || err.message === "Token inválido o expirado") {
-      return res.status(401).json({ error: err.message });
+      return NextResponse.json({ error: err.message }, { status: 401 });
     }
-    res.status(500).json({ error: "Error al eliminar el tema" });
+    return NextResponse.json({ error: "Error al eliminar el tema" }, { status: 500 });
   }
-});
-
-export default router;
+}

@@ -1,13 +1,11 @@
-import { Router, Request, Response } from "express";
+import { NextRequest, NextResponse } from "next/server";
 import { validarToken } from "@/lib/auth";
 import pool from "@/lib/db";
 
-const router = Router();
-
-// GET /api/users → lista de usuarios (requiere JWT)
-router.get("/api/users", async (req: Request, res: Response) => {
+export async function GET(req: NextRequest) {
   try {
-    validarToken(req.headers.authorization?.split(" ")[1]);
+    const token = req.headers.get("authorization")?.replace("Bearer ", "");
+    validarToken(token);
 
     const conn = await pool.getConnection();
     const rows = await conn.query(
@@ -15,13 +13,11 @@ router.get("/api/users", async (req: Request, res: Response) => {
     );
     conn.release();
 
-    res.json(rows);
+    return NextResponse.json(rows);
   } catch (err: any) {
     if (err.message === "Acceso denegado" || err.message === "Token inválido o expirado") {
-      return res.status(401).json({ error: err.message });
+      return NextResponse.json({ error: err.message }, { status: 401 });
     }
-    res.status(500).json({ error: "Error al obtener usuarios" });
+    return NextResponse.json({ error: "Error al obtener usuarios" }, { status: 500 });
   }
-});
-
-export default router;
+}

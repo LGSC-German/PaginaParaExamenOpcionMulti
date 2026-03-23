@@ -1,44 +1,41 @@
-import { Router, Request, Response } from "express";
+import { NextRequest, NextResponse } from "next/server";
 import { validarToken } from "@/lib/auth";
 import pool from "@/lib/db";
 
-const router = Router();
+type Params = { params: { id: string } };
 
-// PUT /api/users/:id/score → actualizar puntaje solo si es mayor al anterior
-router.put("/api/users/:id/score", async (req: Request, res: Response) => {
+export async function PUT(req: NextRequest, { params }: Params) {
   try {
-    validarToken(req.headers.authorization?.split(" ")[1]);
+    const token = req.headers.get("authorization")?.replace("Bearer ", "");
+    validarToken(token);
 
-    const { id } = req.params;
-    const { score } = req.body;
+    const { score } = await req.json();
 
     if (score === undefined || score === null) {
-      return res.status(400).json({ error: "El campo 'score' es requerido" });
+      return NextResponse.json({ error: "El campo 'score' es requerido" }, { status: 400 });
     }
 
     const nuevoScore = parseFloat(score);
     if (isNaN(nuevoScore) || nuevoScore < 0 || nuevoScore > 100) {
-      return res.status(400).json({ error: "El score debe ser un número entre 0 y 100" });
+      return NextResponse.json(
+        { error: "El score debe ser un número entre 0 y 100" },
+        { status: 400 }
+      );
     }
 
     const conn = await pool.getConnection();
-
-    const rows = await conn.query(
-      "SELECT id, score FROM usuarios WHERE id = ?",
-      [id]
-    );
+    const rows = await conn.query("SELECT id, score FROM usuarios WHERE id = ?", [params.id]);
 
     if (rows.length === 0) {
       conn.release();
-      return res.status(404).json({ error: "Usuario no encontrado" });
+      return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
     }
 
     const scoreActual = parseFloat(rows[0].score) || 0;
 
-    // Solo actualizar si el nuevo score es mayor
     if (nuevoScore <= scoreActual) {
       conn.release();
-      return res.json({
+      return NextResponse.json({
         message: "El puntaje no fue actualizado (el nuevo score no supera el actual)",
         score_actual: scoreActual,
         score_enviado: nuevoScore,
@@ -48,11 +45,11 @@ router.put("/api/users/:id/score", async (req: Request, res: Response) => {
 
     await conn.query(
       "UPDATE usuarios SET score = ?, updated_at = NOW() WHERE id = ?",
-      [nuevoScore, id]
+      [nuevoScore, params.id]
     );
     conn.release();
 
-    res.json({
+    return NextResponse.json({
       message: "Puntaje actualizado exitosamente",
       score_anterior: scoreActual,
       score_nuevo: nuevoScore,
@@ -60,10 +57,8 @@ router.put("/api/users/:id/score", async (req: Request, res: Response) => {
     });
   } catch (err: any) {
     if (err.message === "Acceso denegado" || err.message === "Token inválido o expirado") {
-      return res.status(401).json({ error: err.message });
+      return NextResponse.json({ error: err.message }, { status: 401 });
     }
-    res.status(500).json({ error: "Error al actualizar el puntaje" });
+    return NextResponse.json({ error: "Error al actualizar el puntaje" }, { status: 500 });
   }
-});
-
-export default router;
+}

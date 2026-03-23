@@ -1,13 +1,105 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function AuthPage() {
+  const router = useRouter();
+
   // Alterna entre la vista Login y Registro
   const [isLogin, setIsLogin] = useState(true);
 
   // Muestra u oculta la contraseña en el formulario de Registro
   const [showPassword, setShowPassword] = useState(false);
+
+  // Estados del formulario de Login
+  const [loginData, setLoginData] = useState({ email: "", password: "" });
+
+  // Estados del formulario de Registro
+  const [registerData, setRegisterData] = useState({ nombre: "", email: "", password: "" });
+
+  // Estado de carga y errores
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // ── HANDLERS ──────────────────────────────────────────────────
+
+  async function handleLogin() {
+    setError(null);
+
+    if (!loginData.email || !loginData.password) {
+      setError("Por favor completa todos los campos.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: loginData.email,
+          password: loginData.password,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.mensaje || data.error || "Credenciales inválidas");
+        return;
+      }
+
+      // Guardar JWT en localStorage
+      localStorage.setItem("token", data.token);
+
+      router.push("/dashboard");
+    } catch {
+      setError("Error de conexión. Intenta de nuevo.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleRegister() {
+    setError(null);
+
+    if (!registerData.nombre || !registerData.email || !registerData.password) {
+      setError("Por favor completa todos los campos.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nombre: registerData.nombre,
+          email: registerData.email,
+          password: registerData.password,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || "Error al crear la cuenta");
+        return;
+      }
+
+      // Registro exitoso → ir al login
+      setIsLogin(true);
+      setError(null);
+      setRegisterData({ nombre: "", email: "", password: "" });
+    } catch {
+      setError("Error de conexión. Intenta de nuevo.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // ── RENDER ────────────────────────────────────────────────────
 
   return (
     <>
@@ -67,21 +159,32 @@ export default function AuthPage() {
                   style={{ backgroundColor: "#ffffff", borderColor: "rgba(194,198,211,0.3)" }}>
                   <div className="space-y-6">
 
-                    {/* Campo username
-                        🔌 BD: se envía a POST /api/auth/login → SELECT en tabla `users` WHERE username = ? */}
+                    {/* Mensaje de error */}
+                    {error && (
+                      <div className="flex items-center gap-2 px-4 py-3 rounded-lg text-sm font-medium"
+                        style={{ backgroundColor: "#fff0f0", color: "#b91c1c", border: "1px solid #fecaca" }}>
+                        <span className="material-symbols-outlined text-base">error</span>
+                        {error}
+                      </div>
+                    )}
+
+                    {/* Campo email → POST /api/auth/login */}
                     <div className="space-y-2">
-                      <label htmlFor="login-username" className="block text-sm font-semibold font-headline" style={{ color: "#424751" }}>
-                        Nombre de usuario
+                      <label htmlFor="login-email" className="block text-sm font-semibold font-headline" style={{ color: "#424751" }}>
+                        Correo electrónico
                       </label>
                       <div className="relative group">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none" style={{ color: "#727782" }}>
-                          <span className="material-symbols-outlined text-xl">person</span>
+                          <span className="material-symbols-outlined text-xl">mail</span>
                         </div>
                         <input
-                          id="login-username"
-                          name="username"
-                          type="text"
-                          placeholder="ej. usuario123"
+                          id="login-email"
+                          name="email"
+                          type="email"
+                          placeholder="ej. correo@ejemplo.com"
+                          value={loginData.email}
+                          onChange={(e) => setLoginData({ ...loginData, email: e.target.value })}
+                          onKeyDown={(e) => e.key === "Enter" && handleLogin()}
                           className="block w-full pl-10 pr-4 py-3 rounded-lg outline-none transition-all border"
                           style={{ backgroundColor: "#f9f9ff", borderColor: "#c2c6d3", color: "#191c20" }}
                           onFocus={(e) => { e.currentTarget.style.borderColor = "#125ca9"; e.currentTarget.style.boxShadow = "0 0 0 2px rgba(18,92,169,0.2)"; }}
@@ -90,8 +193,7 @@ export default function AuthPage() {
                       </div>
                     </div>
 
-                    {/* Campo password
-                        🔌 BD: se envía a POST /api/auth/login → comparar con hash en `users` usando bcrypt */}
+                    {/* Campo password → bcrypt compare en /api/auth/login */}
                     <div className="space-y-2">
                       <label htmlFor="login-password" className="block text-sm font-semibold font-headline" style={{ color: "#424751" }}>
                         Contraseña
@@ -105,6 +207,9 @@ export default function AuthPage() {
                           name="password"
                           type="password"
                           placeholder="••••••••"
+                          value={loginData.password}
+                          onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
+                          onKeyDown={(e) => e.key === "Enter" && handleLogin()}
                           className="block w-full pl-10 pr-4 py-3 rounded-lg outline-none transition-all border"
                           style={{ backgroundColor: "#f9f9ff", borderColor: "#c2c6d3", color: "#191c20" }}
                           onFocus={(e) => { e.currentTarget.style.borderColor = "#125ca9"; e.currentTarget.style.boxShadow = "0 0 0 2px rgba(18,92,169,0.2)"; }}
@@ -113,19 +218,27 @@ export default function AuthPage() {
                       </div>
                     </div>
 
-                    {/* Botón submit login
-                        🔌 BD: reemplazar onClick con fetch POST /api/auth/login
-                               Si es exitoso → guardar JWT en cookie → router.push("/quiz") */}
+                    {/* Botón submit → POST /api/auth/login → JWT → /dashboard */}
                     <button
                       type="button"
-                      onClick={() => window.location.href = '/quiz'}
-                      className="w-full py-3.5 font-headline font-bold rounded-lg transition-all flex items-center justify-center gap-2 active:scale-[0.98]"
+                      onClick={handleLogin}
+                      disabled={loading}
+                      className="w-full py-3.5 font-headline font-bold rounded-lg transition-all flex items-center justify-center gap-2 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
                       style={{ backgroundColor: "#125ca9", color: "#ffffff", boxShadow: "0 10px 20px rgba(18,92,169,0.1)" }}
-                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#3875c3")}
-                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#125ca9")}
+                      onMouseEnter={(e) => { if (!loading) e.currentTarget.style.backgroundColor = "#3875c3"; }}
+                      onMouseLeave={(e) => { if (!loading) e.currentTarget.style.backgroundColor = "#125ca9"; }}
                     >
-                      Iniciar Sesión
-                      <span className="material-symbols-outlined text-lg">arrow_forward</span>
+                      {loading ? (
+                        <>
+                          <span className="material-symbols-outlined text-lg animate-spin">progress_activity</span>
+                          Iniciando sesión...
+                        </>
+                      ) : (
+                        <>
+                          Iniciar Sesión
+                          <span className="material-symbols-outlined text-lg">arrow_forward</span>
+                        </>
+                      )}
                     </button>
 
                   </div>
@@ -135,7 +248,7 @@ export default function AuthPage() {
                 <p className="text-center mt-8 text-sm font-medium" style={{ color: "#424751" }}>
                   ¿No tienes cuenta?{" "}
                   <button
-                    onClick={() => setIsLogin(false)}
+                    onClick={() => { setIsLogin(false); setError(null); }}
                     className="font-bold hover:underline decoration-2 underline-offset-4 ml-1 transition-colors"
                     style={{ color: "#125ca9" }}
                   >
@@ -162,19 +275,32 @@ export default function AuthPage() {
 
                   <div className="space-y-6">
 
-                    {/* Campo username
-                        🔌 BD: se envía a POST /api/auth/register → INSERT en tabla `users` (username, password_hash) */}
+                    {/* Mensaje de error */}
+                    {error && (
+                      <div className="flex items-center gap-2 px-4 py-3 rounded-lg text-sm font-medium"
+                        style={{ backgroundColor: "#fff0f0", color: "#b91c1c", border: "1px solid #fecaca" }}>
+                        <span className="material-symbols-outlined text-base">error</span>
+                        {error}
+                      </div>
+                    )}
+
+                    {/* Mensaje de éxito tras registro */}
+                    {/* Se muestra temporalmente antes de volver al login */}
+
+                    {/* Campo nombre → INSERT en tabla `usuarios` */}
                     <div className="space-y-2">
-                      <label htmlFor="reg-username" className="block text-sm font-medium font-body" style={{ color: "#424751" }}>
-                        Nombre de usuario
+                      <label htmlFor="reg-nombre" className="block text-sm font-medium font-body" style={{ color: "#424751" }}>
+                        Nombre completo
                       </label>
                       <div className="relative">
                         <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-lg" style={{ color: "#727782" }}>person</span>
                         <input
-                          id="reg-username"
-                          name="username"
+                          id="reg-nombre"
+                          name="nombre"
                           type="text"
-                          placeholder="Nombre completo"
+                          placeholder="Tu nombre completo"
+                          value={registerData.nombre}
+                          onChange={(e) => setRegisterData({ ...registerData, nombre: e.target.value })}
                           className="w-full pl-10 pr-4 py-3 rounded-lg outline-none transition-all border"
                           style={{ backgroundColor: "#f9f9ff", borderColor: "#c2c6d3", color: "#191c20" }}
                           onFocus={(e) => { e.currentTarget.style.borderColor = "#125ca9"; e.currentTarget.style.boxShadow = "0 0 0 2px rgba(18,92,169,0.2)"; }}
@@ -183,8 +309,29 @@ export default function AuthPage() {
                       </div>
                     </div>
 
-                    {/* Campo password
-                        🔌 BD: se envía a POST /api/auth/register → hashear con bcrypt → guardar en `users` */}
+                    {/* Campo email → INSERT en tabla `usuarios` */}
+                    <div className="space-y-2">
+                      <label htmlFor="reg-email" className="block text-sm font-medium font-body" style={{ color: "#424751" }}>
+                        Correo electrónico
+                      </label>
+                      <div className="relative">
+                        <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-lg" style={{ color: "#727782" }}>mail</span>
+                        <input
+                          id="reg-email"
+                          name="email"
+                          type="email"
+                          placeholder="correo@ejemplo.com"
+                          value={registerData.email}
+                          onChange={(e) => setRegisterData({ ...registerData, email: e.target.value })}
+                          className="w-full pl-10 pr-4 py-3 rounded-lg outline-none transition-all border"
+                          style={{ backgroundColor: "#f9f9ff", borderColor: "#c2c6d3", color: "#191c20" }}
+                          onFocus={(e) => { e.currentTarget.style.borderColor = "#125ca9"; e.currentTarget.style.boxShadow = "0 0 0 2px rgba(18,92,169,0.2)"; }}
+                          onBlur={(e) => { e.currentTarget.style.borderColor = "#c2c6d3"; e.currentTarget.style.boxShadow = "none"; }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Campo password → bcrypt hash → INSERT en `usuarios` */}
                     <div className="space-y-2">
                       <label htmlFor="reg-password" className="block text-sm font-medium font-body" style={{ color: "#424751" }}>
                         Contraseña
@@ -196,6 +343,9 @@ export default function AuthPage() {
                           name="password"
                           type={showPassword ? "text" : "password"}
                           placeholder="••••••••"
+                          value={registerData.password}
+                          onChange={(e) => setRegisterData({ ...registerData, password: e.target.value })}
+                          onKeyDown={(e) => e.key === "Enter" && handleRegister()}
                           className="w-full pl-10 pr-10 py-3 rounded-lg outline-none transition-all border"
                           style={{ backgroundColor: "#f9f9ff", borderColor: "#c2c6d3", color: "#191c20" }}
                           onFocus={(e) => { e.currentTarget.style.borderColor = "#125ca9"; e.currentTarget.style.boxShadow = "0 0 0 2px rgba(18,92,169,0.2)"; }}
@@ -217,19 +367,27 @@ export default function AuthPage() {
                       </div>
                     </div>
 
-                    {/* Botón submit registro
-                        🔌 BD: reemplazar onClick con fetch POST /api/auth/register
-                               Si es exitoso → guardar JWT en cookie → router.push("/quiz") */}
+                    {/* Botón submit → POST /api/auth/register → vuelve al login */}
                     <button
                       type="button"
-                      onClick={() => window.location.href = '/quiz'}
-                      className="w-full font-headline font-semibold py-3 px-4 rounded-lg transition-all duration-150 flex justify-center items-center gap-2 active:scale-[0.98]"
+                      onClick={handleRegister}
+                      disabled={loading}
+                      className="w-full font-headline font-semibold py-3 px-4 rounded-lg transition-all duration-150 flex justify-center items-center gap-2 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
                       style={{ backgroundColor: "#125ca9", color: "#ffffff" }}
-                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#3875c3")}
-                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#125ca9")}
+                      onMouseEnter={(e) => { if (!loading) e.currentTarget.style.backgroundColor = "#3875c3"; }}
+                      onMouseLeave={(e) => { if (!loading) e.currentTarget.style.backgroundColor = "#125ca9"; }}
                     >
-                      Crear Cuenta
-                      <span className="material-symbols-outlined text-lg">arrow_forward</span>
+                      {loading ? (
+                        <>
+                          <span className="material-symbols-outlined text-lg animate-spin">progress_activity</span>
+                          Creando cuenta...
+                        </>
+                      ) : (
+                        <>
+                          Crear Cuenta
+                          <span className="material-symbols-outlined text-lg">arrow_forward</span>
+                        </>
+                      )}
                     </button>
 
                   </div>
@@ -239,7 +397,7 @@ export default function AuthPage() {
                     <p className="text-sm" style={{ color: "#424751" }}>
                       ¿Ya tienes cuenta?{" "}
                       <button
-                        onClick={() => setIsLogin(true)}
+                        onClick={() => { setIsLogin(true); setError(null); }}
                         className="font-semibold hover:underline decoration-2 underline-offset-4 ml-1"
                         style={{ color: "#125ca9" }}
                       >
