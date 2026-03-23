@@ -14,7 +14,7 @@ El sistema seleciona temas → Gemini genera las preguntas → el estudiante res
 
 | Capa | Tecnología |
 |------|------------|
-| Backend / API REST | Node.js + Express.js |
+| Backend / API REST | Node.js + Express|
 | Base de datos | MariaDB |
 | Generación de preguntas | Google Gemini API |
 | Diseño de pantallas | Stitch |
@@ -125,36 +125,36 @@ quiz-app/
 ├── schema.sql                        ← Script de creación de BD (MariaDB)
 ├── .env.example                      ← Plantilla de variables de entorno
 ├── package.json
-├── next.config.js
+├── next.config.ts
 ├── propuesta/
 │   └── screens/                      ← Imágenes exportadas de Stitch
 ├── README.md                     ← Pantallas y modelo de BD explicados
 ├── app/
-│   ├── layout.jsx                    ← Layout raíz
-│   ├── page.jsx                      ← Login / Registro (/)
+│   ├── layout.tsx                    ← Layout raíz
+│   ├── page.tsx                      ← Login / Registro (/)
 │   ├── dashboard/
-│   │   └── page.jsx                  ← Panel del estudiante (/dashboard)
+│   │   └── page.tsx                  ← Panel del estudiante (/dashboard)
 │   ├── quiz/
-│   │   └── page.jsx                  ← Pantalla de evaluación (/quiz)
+│   │   └── page.tsx                  ← Pantalla de evaluación (/quiz)
 │   └── api/
 │       ├── auth/
-│       │   ├── register/route.js     ← POST /api/auth/register
-│       │   └── login/route.js        ← POST /api/auth/login
+│       │   ├── register/route.ts     ← POST /api/auth/register
+│       │   └── login/route.ts        ← POST /api/auth/login
 │       ├── users/
-│       │   ├── route.js              ← GET /api/users
+│       │   ├── route.ts              ← GET /api/users
 │       │   └── [id]/
-│       │       ├── route.js          ← GET · PUT · DELETE /api/users/:id
-│       │       └── score/route.js    ← PUT /api/users/:id/score
+│       │       ├── route.ts          ← GET · PUT · DELETE /api/users/:id
+│       │       └── score/route.ts    ← PUT /api/users/:id/score
 │       └── topics/
-│           ├── route.js              ← GET · POST /api/topics
-│           └── [id]/route.js         ← DELETE /api/topics/:id
+│           ├── route.ts              ← GET · POST /api/topics
+│           └── [id]/route.ts         ← DELETE /api/topics/:id
 ├── lib/
-│   ├── db.js                         ← Pool de conexión a MariaDB
-│   ├── gemini.js                     ← Integración con Google Gemini API
-│   └── auth.js                       ← Helpers JWT
+│   ├── db.ts                         ← Pool de conexión a MariaDB
+│   ├── gemini.ts                     ← Integración con Google Gemini API
+│   └── auth.ts                       ← Helpers JWT
 ├── models/
-│   └── user.model.js                 ← Queries de usuarios
-├── middleware.js                     ← Verificación JWT (Next.js middleware)
+│   └── user.model.ts                 ← Queries de usuarios
+├── middleware.ts                     ← Verificación JWT (Next.js middleware)
 └── public/                           ← Assets estáticos
 ```
  
