@@ -1,5 +1,4 @@
-import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { validarToken } from "@/lib/auth";
 
 // Rutas públicas que NO requieren JWT
@@ -25,17 +24,17 @@ export function middleware(request: NextRequest) {
     validarToken(token);
     return NextResponse.next();
   } catch {
-    return NextResponse.json(
-      { error: "No autorizado" },
-      { status: 401 }
-    );
+    // Rutas de API → respuesta JSON 401
+    if (pathname.startsWith("/api/")) {
+      return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+    }
+    // Páginas protegidas → redirigir al login
+    return NextResponse.redirect(new URL("/", request.url));
   }
 }
 
 export const config = {
   matcher: [
     "/api/:path*",
-    "/dashboard/:path*",
-    "/quiz/:path*",
   ],
 };
