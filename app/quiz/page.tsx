@@ -99,6 +99,8 @@ export default function QuizPage() {
 
     try {
       const token = localStorage.getItem("token");
+
+      console.log("TOKEN ENVIADO:", token);
       const res = await fetch(`/api/quiz?topic=${encodeURIComponent(topic.nombre)}`, {
         headers: { Authorization: `Bearer ${token}` },
       });

@@ -6,6 +6,7 @@ const PUBLIC_ROUTES = [
   "/api/auth/login",
   "/api/auth/register",
   "/api/topics",
+  "/api/quiz",
 ];
 
 export function middleware(request: NextRequest) {

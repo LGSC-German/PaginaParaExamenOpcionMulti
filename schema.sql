@@ -1,4 +1,4 @@
---mysql -u root -p < schema.sql
+--mariadb -u root -p < schema.sql
 
 CREATE DATABASE IF NOT EXISTS Evaluacion
   CHARACTER SET utf8mb4
