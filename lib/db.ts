@@ -7,3 +7,5 @@ const pool = mariadb.createPool({
   password: process.env.PASSWORD || 'root',
   database: process.env.NAME || 'Evaluacion', 
 });
+
+export default pool;

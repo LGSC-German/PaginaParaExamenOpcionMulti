@@ -1,33 +1,22 @@
-import jwt from "jsonwebtoken";
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+import { validarToken } from "@/lib/auth";
 
-// Definimos el tipo del payload
-interface Payload {
-  id: number;
-  name: string;
-  password: string;
-}
-
-// Crear token
-export function crearToken(id: number, name: string, password: string): string {
-  const payload: Payload = { id, name, password };
-
-  return jwt.sign(
-    payload,
-    process.env.JWT_SECRET!,
-    { expiresIn: "24h" }
-  );
-}
-
-// Validar token
-export function validarToken(token?: string): Payload {
-  if (!token) {
-    throw new Error("Acceso denegado");
-  }
+export function middleware(request: NextRequest) {
+  const token = request.cookies.get("token")?.value
+    ?? request.headers.get("authorization")?.replace("Bearer ", "");
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as Payload;
-    return decoded;
-  } catch (err) {
-    throw new Error("Token inválido o expirado");
+    validarToken(token);
+    return NextResponse.next();
+  } catch {
+    return NextResponse.json(
+      { error: "No autorizado" },
+      { status: 401 }
+    );
   }
 }
+
+export const config = {
+  matcher: ["/api/:path*", "/dashboard/:path*", "/users/:path*"], // rutas protegidas
+};
