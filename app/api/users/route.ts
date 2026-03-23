@@ -5,8 +5,6 @@ import pool from "@/lib/db";
 export async function GET(req: NextRequest) {
   try {
     const token = req.headers.get("authorization")?.replace("Bearer ", "");
-    console.log("TOKEN RECIBIDO:", token?.slice(0, 20));
-
     validarToken(token);
 
     const conn = await pool.getConnection();
@@ -16,7 +14,6 @@ export async function GET(req: NextRequest) {
     conn.release();
 
     return NextResponse.json(rows);
-<<<<<<< HEAD
   } catch (err: any) {
     if (err.message === "Acceso denegado" || err.message === "Token inválido o expirado") {
       return NextResponse.json({ error: err.message }, { status: 401 });
@@ -30,25 +27,8 @@ export async function GET(req: NextRequest) {
     console.log("TOKEN RECIBIDO:", token?.slice(0, 20));
     validarToken(token);
     // ...
-=======
-
->>>>>>> 06bebb037544b8ed7965c08e3784fd022deb6f05
   } catch (err: any) {
     console.log("ERROR VALIDACION:", err.message);
-
-    if (
-      err.message === "Acceso denegado" ||
-      err.message === "Token inválido o expirado"
-    ) {
-      return NextResponse.json(
-        { error: err.message },
-        { status: 401 }
-      );
-    }
-
-    return NextResponse.json(
-      { error: "Error al obtener usuarios" },
-      { status: 500 }
-    );
+    // ...
   }
 }*/

@@ -4,28 +4,31 @@ import { generarPreguntas } from "@/lib/gemini";
 
 export async function GET(req: NextRequest) {
   try {
-    //const token = req.headers.get("authorization")?.replace("Bearer ", "");
-    //validarToken(token);
-
-    const topic = req.nextUrl.searchParams.get("topic");
-    if (!topic) {
-      return NextResponse.json({ error: "El parámetro 'topic' es requerido" }, { status: 400 });
+    const token = req.headers.get("authorization")?.replace("Bearer ", "");
+    if (!token) {
+      return NextResponse.json({ error: "Token de autorización requerido" }, { status: 401 });
     }
 
-    const preguntas = await generarPreguntas(topic, 10);
-    return NextResponse.json(preguntas);
+    const decoded = validarToken(token);
+    if (!decoded) {
+      return NextResponse.json({ error: "Token inválido o expirado" }, { status: 401 });
+    }
+
+    const topic = req.nextUrl.searchParams.get("topic"); // <-- corregido
+    if (!topic || typeof topic !== "string" || topic.trim() === "") {
+      return NextResponse.json({ error: "El parámetro 'topic' es requerido y debe ser una cadena no vacía" }, { status: 400 });
+    }
+
+    const preguntas = await generarPreguntas(topic.trim(), 10);
+    if (!preguntas || !Array.isArray(preguntas) || preguntas.length === 0) {
+      return NextResponse.json({ error: "No se pudieron generar preguntas para el tema especificado" }, { status: 500 });
+    }
+
+    return NextResponse.json({ preguntas });
   } catch (err: any) {
-    console.error("--- ERROR CRÍTICO EN API QUIZ ---");
-    console.error("Mensaje:", err.message);
-    console.error("Stack:", err.stack); // Esto nos dirá la línea exacta
-    console.error("---------------------------------");
-    
-    return NextResponse.json({ error: err.message }, { status: 500 });
-    /*
-    if (err.message === "Acceso denegado" || err.message === "Token inválido o expirado") {
-      return NextResponse.json({ error: err.message }, { status: 401 });
-    }
-    return NextResponse.json({ error: "Error al generar preguntas" }, { status: 500 });
-    */
+    console.error("Error en API /api/quiz:", err.message);
+    console.error("Stack trace:", err.stack);
+
+    return NextResponse.json({ error: "Error interno del servidor" }, { status: 500 });
   }
 }
