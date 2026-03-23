@@ -1,31 +1,43 @@
 import { Router, Request, Response } from "express";
-import { crearToken } from "@/middleware";
+import bcrypt from "bcrypt";
+import { crearToken } from "@/lib/auth";
 import pool from "@/lib/db";
-
 
 const router = Router();
 
-// Obtener todos los usuarios
-export async function getUsers(req: Request, res: Response) {
+// GET /usuarios
+router.get("/api/users", async (req: Request, res: Response) => {
   try {
     const conn = await pool.getConnection();
     const rows = await conn.query("SELECT id, nombre, email FROM usuarios");
     conn.release();
     res.json(rows);
-  } catch (err) {
+  } catch {
     res.status(500).json({ error: "Error al obtener usuarios" });
   }
-}
+});
 
-// Ruta de login
-router.post("/login", (req: Request, res: Response) => {
-  const { usuario, password } = req.body;
+// POST /usuarios/login
+router.post("/api/users/login", async (req: Request, res: Response) => {
+  try {
+    const { usuario, password } = req.body;
 
-  if (usuario === "admin" && password === "1234") {
-    const token = crearToken(1, "admin", "1234");
+    const conn = await pool.getConnection();
+    const rows = await conn.query(
+      "SELECT id, nombre, password FROM usuarios WHERE email = ?",
+      [usuario]
+    );
+    conn.release();
+
+    const user = rows[0];
+    if (!user || !(await bcrypt.compare(password, user.password))) {
+      return res.status(401).json({ mensaje: "Credenciales inválidas" });
+    }
+
+    const token = crearToken(user.id, user.nombre, user.password);
     res.json({ token });
-  } else {
-    res.status(401).json({ mensaje: "Credenciales inválidas" });
+  } catch {
+    res.status(500).json({ error: "Error en el servidor" });
   }
 });
 
