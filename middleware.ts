@@ -1,13 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
-import { validarToken } from "@/lib/auth";
 
-// Rutas públicas que NO requieren JWT
 const PUBLIC_ROUTES = [
   "/api/auth/login",
   "/api/auth/register",
   "/api/topics",
-  "/api/quiz",
 ];
+
+function isTokenValid(token: string): boolean {
+  try {
+    const parts = token.split(".");
+    if (parts.length !== 3) return false;
+    const payload = JSON.parse(atob(parts[1]));
+    if (payload.exp && Date.now() / 1000 > payload.exp) return false;
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -16,26 +25,24 @@ export function middleware(request: NextRequest) {
   const isPublic = PUBLIC_ROUTES.some((route) => pathname.startsWith(route));
   if (isPublic) return NextResponse.next();
 
-  // Leer token desde cookie o header Authorization
   const token =
     request.cookies.get("token")?.value ??
     request.headers.get("authorization")?.replace("Bearer ", "");
 
-  try {
-    validarToken(token);
-    return NextResponse.next();
-  } catch {
-    // Rutas de API → respuesta JSON 401
+  if (!token || !isTokenValid(token)) {
     if (pathname.startsWith("/api/")) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
-    // Páginas protegidas → redirigir al login
     return NextResponse.redirect(new URL("/", request.url));
   }
+
+  return NextResponse.next();
 }
 
 export const config = {
   matcher: [
-    "/api/:path*",
+    "/api/((?!auth/login|auth/register|topics).)*",
+    "/dashboard/:path*",
+    "/quiz/:path*",
   ],
 };
